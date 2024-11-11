@@ -1,0 +1,47 @@
+# write my github workflow to deploy my code to a self-hosted with the label "raspberrypi". The only thing required is to run docker-compose up -d that is targeted to my compose file in my project
+
+name: Deploy to Home Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:    
+
+# Define global variables
+env:
+  DOCKER_IMAGE_NAME: idrisfallout/perfume_recommender_system
+  DOCKER_IMAGE_TAG: "1.0"
+
+jobs:
+  build:
+    runs-on: raspberrypi
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build Docker image
+        run: |
+          # Build the Docker image
+          docker build -t ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} .
+          echo 'Docker image built'
+          
+          # Push the Docker image
+          # docker push ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
+
+  deploy:
+    needs: build
+    runs-on: raspberrypi
+    if: success('build')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Deploy with Docker Compose
+        run: |
+          # Assuming your docker-compose.yml is in the same directory
+          docker-compose up -d
+
+      - name: Remove dangling Docker images
+        run: |
+          docker image prune -f

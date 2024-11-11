@@ -1,0 +1,27 @@
+version: '3.3'
+
+services:
+  mail_api:
+    image: idrisfallout/perfume_recommender_system:1.0
+    container_name: perfume_recommender_system
+    environment:
+      - TZ=Africa/Nairobi
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.perfume_recommender_system.entrypoints=http"
+      - "traefik.http.routers.perfume_recommender_system.rule=Host(`perfumes.waithakasam.com`)"
+      - "traefik.http.middlewares.perfume_recommender_system-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.perfume_recommender_system.middlewares=perfume_recommender_system-https-redirect"
+      - "traefik.http.routers.perfume_recommender_system-secure.entrypoints=https"
+      - "traefik.http.routers.perfume_recommender_system-secure.rule=Host(`perfumes.waithakasam.com`)"
+      - "traefik.http.routers.perfume_recommender_system-secure.tls=true"
+      - "traefik.http.routers.perfume_recommender_system-secure.service=perfume_recommender_system"
+      - "traefik.http.services.perfume_recommender_system.loadbalancer.server.port=80"
+      - "traefik.docker.network=nginxproxymanager_network"
+    networks:
+        - nginxproxymanager_network
+
+networks:
+  nginxproxymanager_network:
+    external: true
