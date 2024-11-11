@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.12-slim
 WORKDIR /home/app/src
 # Copy and install requirements
 COPY requirements.txt ./
