@@ -4,6 +4,8 @@ services:
   mail_api:
     image: idrisfallout/perfume_recommender_system:1.0
     container_name: perfume_recommender_system
+    volumes:
+      - /home/idrisfallout/Docker-Services/github-selfhosted/perfume-recommender-system/perfume_recommender_system_deploy/models:/home/app/src/models
     environment:
       - TZ=Africa/Nairobi
     restart: unless-stopped

@@ -1,142 +1,80 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfume Recommender System</title>
+    <title>Perfume Recommendation</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100">
-    <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-bold mb-8 text-center">Perfume Recommender System</h1>
 
-        <!-- Search Section -->
-        <div class="mb-8 max-w-xl mx-auto">
-            <div class="relative">
-                <input type="text"
-                       id="perfume-search"
-                       list="perfume-list"
-                       class="w-full p-4 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
-                       placeholder="Search for a perfume...">
-                <datalist id="perfume-list">
-                    {% for title in perfume_titles %}
-                    <option value="{{ title }}">
-                    {% endfor %}
-                </datalist>
-                <button onclick="getRecommendations()"
-                        class="absolute right-2 top-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-                    Get Recommendations
-                </button>
-            </div>
-        </div>
+<body class="bg-gray-50 font-sans">
 
-        <!-- Filters Section -->
-        <div class="mb-8 max-w-xl mx-auto">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="container mx-auto px-6 py-12">
+        <h1 class="text-5xl font-extrabold text-center text-gray-800 mb-10">Perfume Recommendation System</h1>
+
+        <form method="POST" class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-xl space-y-8">
+            <div class="space-y-6">
+
+                <!-- Notes Input Section -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Category</label>
-                    <select id="category-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <label for="note" class="block text-lg font-medium text-gray-800">Fragrance Notes:</label>
+                    <input type="text" id="note" name="note"
+                        class="w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out">
+                </div>
+
+                <!-- Category Dropdown Section -->
+                <div>
+                    <label for="category-filter" class="block text-lg font-medium text-gray-800">Category:</label>
+                    <select id="category-filter" name="category-filter"
+                        class="mt-1 block w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out">
                         <option value="All">All</option>
                         <option value="Men">Men</option>
                         <option value="Women">Women</option>
                         <option value="Unisex">Unisex</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Min Price</label>
-                    <input type="number" id="min-price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+
+                <!-- Price Range Section -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="min_price" class="block text-lg font-medium text-gray-800">Min Price:</label>
+                        <input type="number" id="min_price" name="min_price" step="0.01" required
+                            class="w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out">
+                    </div>
+                    <div>
+                        <label for="max_price" class="block text-lg font-medium text-gray-800">Max Price:</label>
+                        <input type="number" id="max_price" name="max_price" step="0.01" required
+                            class="w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out">
+                    </div>
                 </div>
+
+                <!-- Submit Button -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Max Price</label>
-                    <input type="number" id="max-price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <button type="submit"
+                        class="w-full bg-purple-600 text-white py-4 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out">
+                        Get Recommendations
+                    </button>
                 </div>
             </div>
-        </div>
+        </form>
 
-        <!-- Results Section -->
-        <div id="recommendations" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Recommendations will be populated here -->
-        </div>
+        <!-- Recommendations Section -->
+        {% if recommendations %}
+        <h2 class="text-3xl font-semibold mt-12 text-center text-gray-800">Recommended Perfumes:</h2>
+        <ul class="mt-8 space-y-6">
+            {% for perfume in recommendations %}
+            <li class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out">
+                <strong class="text-2xl text-gray-800">{{ perfume['title'] }}</strong>
+                <p class="text-lg text-gray-600">Price: Ksh.{{ perfume['price'] }} - Category: {{ perfume['category'] }}</p>
+            </li>
+            {% endfor %}
+        </ul>
+        {% elif error %}
+        <p class="mt-6 text-center text-red-600 text-xl">{{ error }}</p>
+        {% endif %}
     </div>
 
-    <script>
-        async function getRecommendations() {
-            const perfumeName = document.getElementById('perfume-search').value;
-
-            try {
-                const response = await fetch('/recommend', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        perfume_name: perfumeName,
-                        n_recommendations: 5
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    displayRecommendations(data.recommendations);
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error getting recommendations');
-            }
-        }
-
-        function displayRecommendations(recommendations) {
-            const container = document.getElementById('recommendations');
-            container.innerHTML = '';
-
-            recommendations.forEach(rec => {
-                const card = document.createElement('div');
-                card.className = 'bg-white rounded-lg shadow-md p-6';
-                card.innerHTML = `
-                    <h3 class="text-xl font-semibold mb-2">${rec.title}</h3>
-                    <p class="text-gray-600 mb-2">Category: ${rec.category}</p>
-                    <p class="text-gray-600 mb-2">Price: KSh${rec.price.toLocaleString()}</p>
-                    <div class="mt-4">
-                        <p class="text-sm text-gray-500">Top Notes: ${rec.top_notes}</p>
-                        <p class="text-sm text-gray-500">Middle Notes: ${rec.middle_notes}</p>
-                        <p class="text-sm text-gray-500">Base Notes: ${rec.base_notes}</p>
-                    </div>
-                    <p class="mt-2 text-sm text-gray-400">Similarity Score: ${(rec.similarity_score * 100).toFixed(1)}%</p>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        // Add search autocomplete functionality
-        const searchInput = document.getElementById('perfume-search');
-        let timeoutId;
-
-        searchInput.addEventListener('input', function() {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(async function() {
-                const query = searchInput.value;
-                if (query.length >= 2) {
-                    try {
-                        const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
-                        const matches = await response.json();
-
-                        const datalist = document.getElementById('perfume-list');
-                        datalist.innerHTML = '';
-                        matches.forEach(match => {
-                            const option = document.createElement('option');
-                            option.value = match;
-                            datalist.appendChild(option);
-                        });
-                    } catch (error) {
-                        console.error('Error:', error);
-                    }
-                }
-            }, 300);
-        });
-    </script>
 </body>
+
 </html>

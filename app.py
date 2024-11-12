@@ -1,134 +1,99 @@
-# app.py
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, render_template
 import pandas as pd
-import numpy as np
-from scipy.sparse import hstack, csr_matrix
-from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder, MinMaxScaler
 from sklearn.metrics.pairwise import cosine_similarity
+from scipy.sparse import csr_matrix, hstack
 import pickle
-import os
 
+# Create the Flask app
 app = Flask(__name__)
 
+# Load the models and data
+with open('models/category_mapping.pkl', 'rb') as f:
+    category_mapping = pickle.load(f)
 
-# Load the model and data
-def load_model():
-    # Load preprocessed data and models
-    with open('models/preprocessed_data.pkl', 'rb') as f:
-        data = pickle.load(f)
+with open('models/perfume_data.pkl', 'rb') as f:
+    df = pickle.load(f)
 
-    with open('models/similarity_matrix.pkl', 'rb') as f:
-        similarity_matrix = pickle.load(f)
+with open('models/mlb.pkl', 'rb') as f:
+    mlb = pickle.load(f)
 
-    with open('models/mlb.pkl', 'rb') as f:
-        mlb = pickle.load(f)
+with open('models/scaler.pkl', 'rb') as f:
+    scaler = pickle.load(f)
 
-    with open('models/label_encoder.pkl', 'rb') as f:
-        label_encoder = pickle.load(f)
+with open('models/features_matrix.pkl', 'rb') as f:
+    features_matrix = pickle.load(f)
 
-    with open('models/scaler.pkl', 'rb') as f:
-        scaler = pickle.load(f)
+def recommend_perfume_by_note_category_price(note, category, price_range, num_recommendations=5):
+    encoded_category = None
+    # Check if category is 'All' and set a flag for filtering
+    if category.lower() == 'all':
+        filter_by_category = False
+    else:
+        filter_by_category = True
+        # Map category to encoded value
+        encoded_category = category_mapping.get(category.capitalize())
+        if encoded_category is None:
+            return "Invalid category specified. Please enter 'Women', 'Men', 'Unisex', or 'All'."
 
-    return data, similarity_matrix, mlb, label_encoder, scaler
+    # Filter perfumes by category if applicable and price range
+    min_price, max_price = price_range
+    if filter_by_category:
+        filtered_df = df[(df['category_encoded'] == encoded_category) &
+                         (df['price'] >= min_price) & (df['price'] <= max_price)]
+    else:
+        filtered_df = df[(df['price'] >= min_price) & (df['price'] <= max_price)]
 
+    # If no perfumes match the criteria, return a message
+    if filtered_df.empty:
+        return "No perfumes found for the given criteria."
 
-# Initialize global variables
-data, similarity_matrix, mlb, label_encoder, scaler = load_model()
+    # Create a query vector for the specified note using the one-hot encoding
+    note_vector = pd.Series(0, index=mlb.classes_)
+    for n in note.split(', '):
+        if n in mlb.classes_:
+            note_vector[n] = 1
+    note_vector = note_vector.values.reshape(1, -1)
 
+    # Add category (if filtered) and normalized price to the query vector for similarity calculation
+    if filter_by_category:
+        category_vector = csr_matrix([[encoded_category]])
+    else:
+        # Set a dummy category vector (0 since we are not filtering by category)
+        category_vector = csr_matrix([[0]])
 
-def get_recommendations(perfume_name, n_recommendations=5):
-    try:
-        # Find the index of the perfume
-        idx = data[data['title'].str.lower() == perfume_name.lower()].index[0]
+    price_vector = csr_matrix(scaler.transform([[min_price + (max_price - min_price) / 2]]))
+    query_vector = hstack([csr_matrix(note_vector), category_vector, price_vector])
 
-        # Get similarity scores
-        sim_scores = list(enumerate(similarity_matrix[idx]))
-        sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+    # Calculate similarity scores between the query and filtered perfumes
+    sim_scores = cosine_similarity(query_vector, features_matrix[filtered_df.index]).flatten()
 
-        # Get top N similar perfumes
-        top_indices = [i[0] for i in sim_scores[1:n_recommendations + 1]]
+    # Get the indices of the top recommendations based on similarity scores
+    sim_indices = sim_scores.argsort()[::-1][:num_recommendations]
+    recommendations = filtered_df.iloc[sim_indices][['title', 'price', 'category']]
 
-        recommendations = []
-        for idx in top_indices:
-            recommendations.append({
-                'title': data.iloc[idx]['title'],
-                'category': data.iloc[idx]['category'],
-                'price': float(data.iloc[idx]['price']),
-                'top_notes': data.iloc[idx]['top'],
-                'middle_notes': data.iloc[idx]['middle'],
-                'base_notes': data.iloc[idx]['base'],
-                'similarity_score': float(sim_scores[idx][1])
-            })
+    return recommendations
 
-        return recommendations
-
-    except IndexError:
-        return None
-    except Exception as e:
-        print(f"Error in get_recommendations: {str(e)}")
-        return None
-
-
-# Routes
-@app.route('/')
+@app.route("/", methods=["GET", "POST"])
 def home():
-    # Get unique perfume titles for dropdown
-    perfume_titles = sorted(data['title'].unique())
-    return render_template('index.html', perfume_titles=perfume_titles)
+    if request.method == "POST":
+        # Get data from form
+        user_note = request.form["note"]
+        user_category = request.form["category-filter"]  # Changed from 'gender' to 'category-filter'
+        user_min_price = float(request.form["min_price"])
+        user_max_price = float(request.form["max_price"])
 
+        # Call the recommendation function
+        recommendations = recommend_perfume_by_note_category_price(
+            user_note, user_category, (user_min_price, user_max_price)
+        )
 
-@app.route('/recommend', methods=['POST'])
-def recommend():
-    try:
-        content = request.json
-        perfume_name = content['perfume_name']
-        n_recommendations = content.get('n_recommendations', 5)
+        if isinstance(recommendations, str):  # If it's a string, show error message
+            return render_template("index.html", error=recommendations)
 
-        recommendations = get_recommendations(perfume_name, n_recommendations)
+        # Return recommendations to the user
+        return render_template("index.html", recommendations=recommendations.to_dict(orient="records"))
 
-        if recommendations is None:
-            return jsonify({'error': 'Perfume not found or error in processing'}), 404
+    return render_template("index.html")
 
-        return jsonify({'recommendations': recommendations})
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/search', methods=['GET'])
-def search_perfumes():
-    query = request.args.get('q', '').lower()
-    matching_perfumes = [title for title in data['title'].unique()
-                         if query in title.lower()]
-    return jsonify(matching_perfumes)
-
-
-@app.route('/filter_recommendations', methods=['POST'])
-def filter_recommendations():
-    try:
-        content = request.json
-        category = content.get('category')
-        min_price = content.get('min_price')
-        max_price = content.get('max_price')
-
-        filtered_data = data.copy()
-
-        if category and category != 'All':
-            filtered_data = filtered_data[filtered_data['category'] == category]
-
-        if min_price is not None:
-            filtered_data = filtered_data[filtered_data['price'] >= min_price]
-
-        if max_price is not None:
-            filtered_data = filtered_data[filtered_data['price'] <= max_price]
-
-        return jsonify({
-            'perfumes': filtered_data[['title', 'category', 'price']].to_dict('records')
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=False)
