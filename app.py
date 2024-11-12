@@ -1,8 +1,13 @@
+import os
 from flask import Flask, request, render_template
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.sparse import csr_matrix, hstack
 import pickle
+
+# Ensure the 'models' directory exists
+if not os.path.exists('models'):
+    os.makedirs('models')
 
 # Create the Flask app
 app = Flask(__name__)
