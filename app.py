@@ -13,20 +13,20 @@ if not os.path.exists('models'):
 app = Flask(__name__)
 
 # Load the models and data
-with open('models/category_mapping.pkl', 'rb') as f:
-    category_mapping = pickle.load(f)
-
-with open('models/perfume_data.pkl', 'rb') as f:
-    df = pickle.load(f)
-
-with open('models/mlb.pkl', 'rb') as f:
-    mlb = pickle.load(f)
-
-with open('models/scaler.pkl', 'rb') as f:
-    scaler = pickle.load(f)
-
-with open('models/features_matrix.pkl', 'rb') as f:
-    features_matrix = pickle.load(f)
+# with open('models/category_mapping.pkl', 'rb') as f:
+#     category_mapping = pickle.load(f)
+#
+# with open('models/perfume_data.pkl', 'rb') as f:
+#     df = pickle.load(f)
+#
+# with open('models/mlb.pkl', 'rb') as f:
+#     mlb = pickle.load(f)
+#
+# with open('models/scaler.pkl', 'rb') as f:
+#     scaler = pickle.load(f)
+#
+# with open('models/features_matrix.pkl', 'rb') as f:
+#     features_matrix = pickle.load(f)
 
 def recommend_perfume_by_note_category_price(note, category, price_range, num_recommendations=5):
     encoded_category = None
