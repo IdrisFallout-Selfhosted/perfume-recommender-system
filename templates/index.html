@@ -13,48 +13,39 @@
     <div class="container mx-auto px-6 py-12">
         <h1 class="text-5xl font-extrabold text-center text-gray-800 mb-10">Perfume Recommendation System</h1>
 
-        <form method="POST" class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-xl space-y-8">
-            <div class="space-y-6">
+        <!-- Search and Filter Container with a Sleek Design -->
+        <form method="POST" class="max-w-4xl mx-auto bg-white p-10 rounded-lg shadow-lg space-y-6">
+            <!-- Search Box and Recommend Button in a Row -->
+            <div class="flex items-center space-x-4">
+                <input type="text" id="note" name="note" placeholder="Search for fragrance notes, e.g., Rose, Musk"
+                    class="flex-grow p-4 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out text-lg placeholder-gray-500">
+                <button type="submit"
+                    class="bg-purple-600 text-white py-4 px-6 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out text-lg font-semibold">
+                    Recommend
+                </button>
+            </div>
 
-                <!-- Notes Input Section -->
+            <!-- Filters in a Horizontal Row with Modern Style -->
+            <div class="grid grid-cols-3 gap-6 mt-6">
                 <div>
-                    <label for="note" class="block text-lg font-medium text-gray-800">Fragrance Notes:</label>
-                    <input type="text" id="note" name="note"
-                        class="w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out">
-                </div>
-
-                <!-- Category Dropdown Section -->
-                <div>
-                    <label for="category-filter" class="block text-lg font-medium text-gray-800">Category:</label>
+                    <label for="category-filter" class="block text-lg font-medium text-gray-800 mb-2">Category:</label>
                     <select id="category-filter" name="category-filter"
-                        class="mt-1 block w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out">
+                        class="mt-1 block w-full p-4 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out text-lg">
                         <option value="All">All</option>
                         <option value="Men">Men</option>
                         <option value="Women">Women</option>
                         <option value="Unisex">Unisex</option>
                     </select>
                 </div>
-
-                <!-- Price Range Section -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="min_price" class="block text-lg font-medium text-gray-800">Min Price:</label>
-                        <input type="number" id="min_price" name="min_price" step="0.01" required
-                            class="w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out">
-                    </div>
-                    <div>
-                        <label for="max_price" class="block text-lg font-medium text-gray-800">Max Price:</label>
-                        <input type="number" id="max_price" name="max_price" step="0.01" required
-                            class="w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out">
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
                 <div>
-                    <button type="submit"
-                        class="w-full bg-purple-600 text-white py-4 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out">
-                        Get Recommendations
-                    </button>
+                    <label for="min_price" class="block text-lg font-medium text-gray-800 mb-2">Min Price:</label>
+                    <input type="number" id="min_price" name="min_price" step="0.01" required
+                        class="w-full p-4 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out text-lg">
+                </div>
+                <div>
+                    <label for="max_price" class="block text-lg font-medium text-gray-800 mb-2">Max Price:</label>
+                    <input type="number" id="max_price" name="max_price" step="0.01" required
+                        class="w-full p-4 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out text-lg">
                 </div>
             </div>
         </form>
@@ -62,14 +53,35 @@
         <!-- Recommendations Section -->
         {% if recommendations %}
         <h2 class="text-3xl font-semibold mt-12 text-center text-gray-800">Recommended Perfumes:</h2>
-        <ul class="mt-8 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
             {% for perfume in recommendations %}
-            <li class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out">
-                <strong class="text-2xl text-gray-800">{{ perfume['title'] }}</strong>
-                <p class="text-lg text-gray-600">Price: Ksh.{{ perfume['price'] }} - Category: {{ perfume['category'] }}</p>
-            </li>
+            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out">
+                <div class="relative">
+                    <img src="{{ perfume['image'] }}" alt="{{ perfume['title'] }}"
+                        class="w-full h-64 object-cover rounded-lg">
+
+                    <!-- Category Label with Conditional Colors -->
+                    <div class="absolute top-2 right-2 px-3 py-1 text-xs rounded-full uppercase
+                                {% if perfume['category'] == 'Men' %} bg-blue-600 text-white
+                                {% elif perfume['category'] == 'Women' %} bg-pink-600 text-white
+                                {% elif perfume['category'] == 'Unisex' %} bg-green-600 text-white
+                                {% else %} bg-gray-500 text-white {% endif %}">
+                        {{ perfume['category'] }}
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <h3 class="text-2xl font-semibold text-gray-800">{{ perfume['title'] }}</h3>
+                    <p class="text-lg text-gray-600 mt-1">Ksh. {{ '{:,.2f}'.format(perfume['price']) }}</p>
+                </div>
+                <div class="mt-6 flex justify-center">
+                    <a href="{{ perfume['link'] }}" target="_blank"
+                        class="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out">
+                        View Product
+                    </a>
+                </div>
+            </div>
             {% endfor %}
-        </ul>
+        </div>
         {% elif error %}
         <p class="mt-6 text-center text-red-600 text-xl">{{ error }}</p>
         {% endif %}

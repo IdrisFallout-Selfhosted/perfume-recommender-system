@@ -74,7 +74,7 @@ def recommend_perfume_by_note_category_price(note, category, price_range, num_re
 
     # Get the indices of the top recommendations based on similarity scores
     sim_indices = sim_scores.argsort()[::-1][:num_recommendations]
-    recommendations = filtered_df.iloc[sim_indices][['title', 'price', 'category']]
+    recommendations = filtered_df.iloc[sim_indices][['title', 'price', 'category', 'image', 'link']]
 
     return recommendations
 
