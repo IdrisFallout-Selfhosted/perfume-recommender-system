@@ -10,23 +10,23 @@
 
 <body class="bg-gray-50 font-sans">
 
-    <div class="container mx-auto px-6 py-12">
-        <h1 class="text-5xl font-extrabold text-center text-gray-800 mb-10">Perfume Recommendation System</h1>
+    <div class="container mx-auto px-4 py-12">
+        <h1 class="text-3xl md:text-5xl font-extrabold text-center text-gray-800 mb-8">Perfume Recommendation System</h1>
 
-        <!-- Search and Filter Container with a Sleek Design -->
-        <form method="POST" class="max-w-4xl mx-auto bg-white p-10 rounded-lg shadow-lg space-y-6">
+        <!-- Search and Filter Container with Responsive Design -->
+        <form method="POST" class="max-w-4xl mx-auto bg-white p-8 md:p-10 rounded-lg shadow-lg space-y-6" id="recommendation-form">
             <!-- Search Box and Recommend Button in a Row -->
-            <div class="flex items-center space-x-4">
+            <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
                 <input type="text" id="note" name="note" placeholder="Search for fragrance notes, e.g., Rose, Musk"
-                    class="flex-grow p-4 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out text-lg placeholder-gray-500">
+                    class="w-full p-4 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out text-lg placeholder-gray-500">
                 <button type="submit"
-                    class="bg-purple-600 text-white py-4 px-6 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out text-lg font-semibold">
+                    class="w-full md:w-auto bg-purple-600 text-white py-4 px-6 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out text-lg font-semibold">
                     Recommend
                 </button>
             </div>
 
-            <!-- Filters in a Horizontal Row with Modern Style -->
-            <div class="grid grid-cols-3 gap-6 mt-6">
+            <!-- Filters in a Responsive Row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
                 <div>
                     <label for="category-filter" class="block text-lg font-medium text-gray-800 mb-2">Category:</label>
                     <select id="category-filter" name="category-filter"
@@ -52,13 +52,13 @@
 
         <!-- Recommendations Section -->
         {% if recommendations %}
-        <h2 class="text-3xl font-semibold mt-12 text-center text-gray-800">Recommended Perfumes:</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
+        <h2 class="text-2xl md:text-3xl font-semibold mt-10 md:mt-12 text-center text-gray-800">Recommended Perfumes:</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
             {% for perfume in recommendations %}
             <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out">
                 <div class="relative">
                     <img src="{{ perfume['image'] }}" alt="{{ perfume['title'] }}"
-                        class="w-full h-64 object-cover rounded-lg">
+                        class="w-full h-56 md:h-64 object-cover rounded-lg">
 
                     <!-- Category Label with Conditional Colors -->
                     <div class="absolute top-2 right-2 px-3 py-1 text-xs rounded-full uppercase
@@ -70,7 +70,7 @@
                     </div>
                 </div>
                 <div class="mt-4">
-                    <h3 class="text-2xl font-semibold text-gray-800">{{ perfume['title'] }}</h3>
+                    <h3 class="text-xl md:text-2xl font-semibold text-gray-800">{{ perfume['title'] }}</h3>
                     <p class="text-lg text-gray-600 mt-1">Ksh. {{ '{:,.2f}'.format(perfume['price']) }}</p>
                 </div>
                 <div class="mt-6 flex justify-center">
@@ -87,6 +87,36 @@
         {% endif %}
     </div>
 
+    <script>
+        // Function to preserve the form data after page reload
+        document.addEventListener('DOMContentLoaded', function() {
+            // Retrieve previously stored filter values from localStorage
+            const storedCategory = localStorage.getItem('category-filter');
+            const storedMinPrice = localStorage.getItem('min_price');
+            const storedMaxPrice = localStorage.getItem('max_price');
+            const storedNote = localStorage.getItem('note');
+
+            // Set the values in the form if they exist
+            if (storedCategory) document.getElementById('category-filter').value = storedCategory;
+            if (storedMinPrice) document.getElementById('min_price').value = storedMinPrice;
+            if (storedMaxPrice) document.getElementById('max_price').value = storedMaxPrice;
+            if (storedNote) document.getElementById('note').value = storedNote;
+
+            // Listen for changes in the form and save them to localStorage
+            document.getElementById('category-filter').addEventListener('change', function() {
+                localStorage.setItem('category-filter', this.value);
+            });
+            document.getElementById('min_price').addEventListener('input', function() {
+                localStorage.setItem('min_price', this.value);
+            });
+            document.getElementById('max_price').addEventListener('input', function() {
+                localStorage.setItem('max_price', this.value);
+            });
+            document.getElementById('note').addEventListener('input', function() {
+                localStorage.setItem('note', this.value);
+            });
+        });
+    </script>
 </body>
 
 </html>
