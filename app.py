@@ -12,67 +12,61 @@ if not os.path.exists('models'):
 # Create the Flask app
 app = Flask(__name__)
 
-# Load the models and data
-with open('models/category_mapping.pkl', 'rb') as f:
-    category_mapping = pickle.load(f)
+def load_pickled_objects(folder="models"):
+    loaded_objects = {}
+    for obj_name in ["tfidf_vectorizer", "scaler", "category_mapping", "features_matrix", "df"]:
+        with open(os.path.join(folder, f"{obj_name}.pkl"), "rb") as f:
+            loaded_objects[obj_name] = pickle.load(f)
+    return loaded_objects
 
-with open('models/perfume_data.pkl', 'rb') as f:
-    df = pickle.load(f)
+# Load pickled objects from models/ folder
+pickled_objects = load_pickled_objects(folder="models")
+tfidf_vectorizer = pickled_objects["tfidf_vectorizer"]
+scaler = pickled_objects["scaler"]
+category_mapping = pickled_objects["category_mapping"]
+features_matrix = pickled_objects["features_matrix"]
+df = pickled_objects["df"]
 
-with open('models/mlb.pkl', 'rb') as f:
-    mlb = pickle.load(f)
-
-with open('models/scaler.pkl', 'rb') as f:
-    scaler = pickle.load(f)
-
-with open('models/features_matrix.pkl', 'rb') as f:
-    features_matrix = pickle.load(f)
-
-def recommend_perfume_by_note_category_price(note, category, price_range, num_recommendations=5):
-    encoded_category = None
-    # Check if category is 'All' and set a flag for filtering
-    if category.lower() == 'all':
-        filter_by_category = False
+def recommend_perfume_by_note_gender_price(note, gender, price_range, model_type="cosine", num_recommendations=5):
+    # Map gender to encoded value or handle "ALL"
+    if gender.capitalize() == "All":
+        encoded_gender = None  # Indicate that all genders are to be included
     else:
-        filter_by_category = True
-        # Map category to encoded value
-        encoded_category = category_mapping.get(category.capitalize())
-        if encoded_category is None:
-            return "Invalid category specified. Please enter 'Women', 'Men', 'Unisex', or 'All'."
+        encoded_gender = category_mapping.get(gender.capitalize())
+        if encoded_gender is None:
+            return "Invalid gender specified. Please enter 'Women', 'Men', 'Unisex', or 'All'."
 
-    # Filter perfumes by category if applicable and price range
     min_price, max_price = price_range
-    if filter_by_category:
-        filtered_df = df[(df['category_encoded'] == encoded_category) &
+
+    # Filter by price and optionally by gender
+    if encoded_gender is not None:
+        filtered_df = df[(df['category_encoded'] == encoded_gender) &
                          (df['price'] >= min_price) & (df['price'] <= max_price)]
     else:
         filtered_df = df[(df['price'] >= min_price) & (df['price'] <= max_price)]
 
-    # If no perfumes match the criteria, return a message
     if filtered_df.empty:
         return "No perfumes found for the given criteria."
 
-    # Create a query vector for the specified note using the one-hot encoding
-    note_vector = pd.Series(0, index=mlb.classes_)
-    for n in note.split(', '):
-        if n in mlb.classes_:
-            note_vector[n] = 1
-    note_vector = note_vector.values.reshape(1, -1)
+    # Create a query vector for the specified note using TF-IDF vectorizer
+    query_note_vector = tfidf_vectorizer.transform([note])
 
-    # Add category (if filtered) and normalized price to the query vector for similarity calculation
-    if filter_by_category:
-        category_vector = csr_matrix([[encoded_category]])
-    else:
-        # Set a dummy category vector (0 since we are not filtering by category)
-        category_vector = csr_matrix([[0]])
+    # Add gender (set to 0 for "ALL") and normalized price to the query vector
+    gender_vector = csr_matrix([[encoded_gender if encoded_gender is not None else 0]])
+    price_vector = csr_matrix(scaler.transform([[min_price + (max_price - min_price) / 2]]))  # Midpoint of price range
+    query_vector = hstack([query_note_vector, gender_vector, price_vector])
 
-    price_vector = csr_matrix(scaler.transform([[min_price + (max_price - min_price) / 2]]))
-    query_vector = hstack([csr_matrix(note_vector), category_vector, price_vector])
+    # Ensure the query vector has the same number of features as the feature matrix
+    if query_vector.shape[1] != features_matrix.shape[1]:
+        # Fill missing features in the query vector with zeros if necessary
+        missing_columns = features_matrix.shape[1] - query_vector.shape[1]
+        query_vector = hstack([query_vector, csr_matrix([[0] * missing_columns])])
 
-    # Calculate similarity scores between the query and filtered perfumes
-    sim_scores = cosine_similarity(query_vector, features_matrix[filtered_df.index]).flatten()
+    # Calculate similarity scores based on the chosen model
+    if model_type == "cosine":
+        sim_scores = cosine_similarity(query_vector, features_matrix[filtered_df.index, :]).flatten()
 
-    # Get the indices of the top recommendations based on similarity scores
+    # Get indices of top recommendations
     sim_indices = sim_scores.argsort()[::-1][:num_recommendations]
     recommendations = filtered_df.iloc[sim_indices][['title', 'price', 'category', 'image', 'link']]
 
@@ -88,7 +82,7 @@ def home():
         user_max_price = float(request.form["max_price"])
 
         # Call the recommendation function
-        recommendations = recommend_perfume_by_note_category_price(
+        recommendations = recommend_perfume_by_note_gender_price(
             user_note, user_category, (user_min_price, user_max_price)
         )
 
