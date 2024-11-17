@@ -99,6 +99,38 @@
             © 2024 Perfume Recommendation System. All rights reserved.
         </div>
     </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Function to preserve the form data after page reload
+        document.addEventListener('DOMContentLoaded', function() {
+            // Retrieve previously stored filter values from localStorage
+            const storedCategory = localStorage.getItem('category-filter');
+            const storedMinPrice = localStorage.getItem('min_price');
+            const storedMaxPrice = localStorage.getItem('max_price');
+            const storedNote = localStorage.getItem('note');
+
+            // Set the values in the form if they exist
+            if (storedCategory) document.getElementById('category-filter').value = storedCategory;
+            if (storedMinPrice) document.getElementById('min_price').value = storedMinPrice;
+            if (storedMaxPrice) document.getElementById('max_price').value = storedMaxPrice;
+            if (storedNote) document.getElementById('note').value = storedNote;
+
+            // Listen for changes in the form and save them to localStorage
+            document.getElementById('category-filter').addEventListener('change', function() {
+                localStorage.setItem('category-filter', this.value);
+            });
+            document.getElementById('min_price').addEventListener('input', function() {
+                localStorage.setItem('min_price', this.value);
+            });
+            document.getElementById('max_price').addEventListener('input', function() {
+                localStorage.setItem('max_price', this.value);
+            });
+            document.getElementById('note').addEventListener('input', function() {
+                localStorage.setItem('note', this.value);
+            });
+        });
+    </script>
 </body>
 
 </html>
