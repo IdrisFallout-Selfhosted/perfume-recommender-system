@@ -66,7 +66,7 @@
             {% for perfume in recommendations %}
             <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out">
                 <div class="relative">
-                    <img src="{{ perfume['image'] }}" alt="{{ perfume['title'] }}" class="w-full h-56 object-cover rounded-lg">
+                    <img src="{{ perfume['image'].split('?')[0] }}?resize=600%2C600&ssl=1" alt="{{ perfume['title'] }}" class="w-full h-56 object-cover rounded-lg">
                     <div class="absolute top-2 right-2 px-3 py-1 text-xs rounded-full uppercase
                                 {% if perfume['category'] == 'Men' %} bg-blue-600 text-white
                                 {% elif perfume['category'] == 'Women' %} bg-pink-600 text-white
