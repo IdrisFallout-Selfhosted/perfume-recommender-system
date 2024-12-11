@@ -1,13 +1,11 @@
-# write my github workflow to deploy my code to a self-hosted with the label "raspberrypi". The only thing required is to run docker-compose up -d that is targeted to my compose file in my project
-
 name: Deploy to Home Server
 
 on:
   push:
     branches:
-      - main
       - master
-  workflow_dispatch:    
+      - main
+  workflow_dispatch:
 
 # Define global variables
 env:
@@ -15,33 +13,50 @@ env:
   DOCKER_IMAGE_TAG: "1.0"
 
 jobs:
-  build:
-    runs-on: raspberrypi
+  build_raspberrypi:
+    runs-on: raspberrypi  # Build and deploy on Raspberry Pi
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Build Docker image
+      - name: Build Docker image for Raspberry Pi
         run: |
-          # Build the Docker image
+          # Build the Docker image for the native platform (Raspberry Pi)
           docker build -t ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} .
-          echo 'Docker image built'
-          
-          # Push the Docker image
-          # docker push ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
+          echo 'Docker image built for Raspberry Pi'
 
-  deploy:
-    needs: build
-    runs-on: raspberrypi
-    if: success('build')
+      - name: Deploy with Docker Compose to Raspberry Pi
+        run: |
+          docker-compose up -d
+        env:
+          HOME: ${{ env.HOME }}
+
+      - name: Remove dangling Docker images
+        run: |
+          docker image prune -f
+
+  build_desktop_tler9ha:
+    runs-on: desktop-tler9ha  # Build and deploy on Desktop (tler9ha)
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Deploy with Docker Compose
+      - name: Build Docker image for Desktop
         run: |
-          # Assuming your docker-compose.yml is in the same directory
+          # Build the Docker image for the native platform (Desktop)
+          docker build -t ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} .
+          echo 'Docker image built for Desktop'
+
+      - name: Set environment variables for Desktop
+        run: |
+          echo "HOME=${env:USERPROFILE}" | Out-File -Append -FilePath $env:GITHUB_ENV
+        shell: powershell
+
+      - name: Deploy with Docker Compose to Desktop
+        run: |
           docker-compose up -d
+        env:
+          HOME: ${{ env.HOME }}
 
       - name: Remove dangling Docker images
         run: |
